@@ -1,0 +1,17 @@
+export dropimage="ubuntu-20-04-x64"
+export dropsize="s-2vcpu-4gb"
+export dropregion="sfo3"
+export droptoken="your_token"
+export dropssh="$(ssh-keygen -lf <path_to_md5_ssh.pub>)"
+export dropshortnames='<your_name>\|<your_initials>'
+
+export linodeimage="linode/ubuntu20.04"
+export linodetype="g6-standard-2"
+export linodessh="$(cat <path_to_ssh.pub>)"
+export linoderootpswd="<pick_a_root_passwd>"
+
+export aws_name="<your_first_name>"
+export aws_initials="*<your_initials>*"
+export aws_instance_type="t3a.medium"
+export aws_ssh_key="<ssh_keyname_in_aws>"
+export aws_dummyregion1=(ami security-group-id subnet-id)
