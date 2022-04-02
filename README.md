@@ -2,7 +2,7 @@
 helper functions to use the CLI for aws, linode, digital ocean.
 
 
-### Installation
+## Installation
 
 #### prerequisites:
 * Install the following CLI:
@@ -21,13 +21,18 @@ helper functions to use the CLI for aws, linode, digital ocean.
   * add `source <path_to_cloned_repo>/cli-helpers.sh` to your shell's config file
 * open a new shell, and confirm that you can run `drop-list`
 
-### How to Use
+## How to Use
 naming is fairly straightforward, but here is a rundown:
-* *-list will list all instances with your specified key
+* _*-list_ will list all instances with your specified key
   * for aws, this can take up to 1 argument, the region you'd like to list
-* *-create will create an instance with the name you specify as the first argument in your default region (specified in `user_variables.private`)
+* _*-create_ will create an instance with the name you specify as the first argument in your default region (specified in `user_variables.private`)
   * for aws, this can take 1 additional argument, the region to create the instance in
-* *-delete takes 1 argument, the instance you wish to delete
+* _*-delete_ takes 1 argument, the instance you wish to delete
   * for aws, this can take 1 additional argument, the region to delete the instance from
-* *-remove-all removes all instances with your tag(s) from the specified provider
+* _*-remove-all_ removes all instances with your tag(s) from the specified provider
   * for aws, this can take 1 additional argument, the region to delete the instances from
+* _aws-cleanup-all_ removes everything from each region with your initials/tags (order: AWS, DO, Linode)
+
+
+## Future Works
+* add more to AWS functionality, including EKS, target groups, route 53, etc. 
