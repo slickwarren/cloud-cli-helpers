@@ -185,9 +185,15 @@ aws-cleanup-all()
 {
   echo "warning! this will remove anything with your initials..." $aws_initials "be sure this is what you want!"
   sleep 5
+
   for regions in us-west-1 us-west-2 us-east-1 us-east-2
   do
+    echo "\nwarning! About to remove everything in" $regions
     aws-remove-all $regions
     aws-remove-all-nlb $regions
   done
+  echo "done with AWS, starting on Digital Ocean \n"
+  drop-remove-all
+  echo "done with Digital Ocean, starting on Linode \n"
+  linode-remove-all
 }
