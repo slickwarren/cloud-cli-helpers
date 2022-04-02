@@ -174,7 +174,7 @@ aws-remove-all-nlb()
   echo "warning! About to remove all NLBs in" ${1:=$region}
   aws-list-nlbs ${1:=$region}
   sleep 2
-  for arn in $(aws-list-arns)
+  for arn in $(aws-list-arns ${1:=$region})
   do
     aws-delete-arn $arn ${1:=$region}
     echo "removed" $arn
