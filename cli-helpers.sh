@@ -181,7 +181,7 @@ aws-remove-all-nlb()
   done
 }
 
-aws-cleanup-all()
+cleanup-all-providers()
 {
   echo "warning! this will remove anything with your initials..." $aws_initials "be sure this is what you want!"
   sleep 5
