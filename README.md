@@ -31,3 +31,4 @@ naming is fairly straightforward, but here is a rundown:
   * for aws, this can take 1 additional argument, the region to delete the instance from
 * *-remove-all removes all instances with your tag(s) from the specified provider
   * for aws, this can take 1 additional argument, the region to delete the instances from
+* cleanup-all-providers will remove everything with your initials from all providers
