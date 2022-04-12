@@ -46,20 +46,40 @@ linode-remove-all()
 ### AWS Instances
 export region=$(aws configure get region)
 alias aws_region="echo $region"
+
+export aws_query="Reservations[*].Instances[*].[PublicIpAddress, PrivateIpAddress, Tags[?Key=='Name'].Value|[0], InstanceId, SubnetId, Placement.AvailabilityZone]"
+export aws_query_id="Reservations[*].Instances[*].InstanceId"
+export aws_query_name="Reservations[*].Instances[*].Tags[?Key=='Name'].Value|[0]"
+
+export aws_filter_owner="Name=tag:Owner,Values=$aws_name"
+export aws_filter_initials="Name=tag:Name,Values=*$aws_initials*"
+export aws_filter_instances="Name=instance-state-name,Values=running"
+
 aws-list()
 {
   echo ${1:=$region}
-  echo -e "$(aws ec2 describe-instances --region ${1:=$region} --filters "Name=tag:Owner,Values=$aws_name" "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].[PublicIpAddress, PrivateIpAddress, Tags[?Key=='Name'].Value|[0], InstanceId]" --output table)" & echo -e "$(aws ec2 describe-instances --region ${1:=$region} --filters  "Name=instance-state-name,Values=running" "Name=tag:Name,Values=*$aws_initials*"  --query "Reservations[*].Instances[*].[PublicIpAddress, PrivateIpAddress, Tags[?Key=='Name'].Value|[0], InstanceId]" --output table)"
+  echo -e "$(aws ec2 describe-instances --region ${1:=$region} --filters "$aws_filter_owner" "$aws_filter_instances" --query "$aws_query" --output table)" & echo -e "$(aws ec2 describe-instances --region ${1:=$region} --filters  "$aws_filter_instances" "$aws_filter_initials"  --query "$aws_query" --output table)"
 }
-aws-list-ids-owner()
+aws-generic-list()
 {
-  echo -e "$(aws ec2 describe-instances --region ${1:=$region} --filters "Name=tag:Owner,Values=$aws_name" "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].[InstanceId]" --output text)"
+  echo -e "$(aws ec2 describe-instances --region ${1:=$region} --filters "${2:=$aws_filter_initials}" "$aws_filter_instances" --query "${3:=$aws_query}" --output text)"
 }
-aws-list-ids-name()
+aws-list-ids-by-initials()
 {
-  echo -e "$(aws ec2 describe-instances --region ${1:=$region} --filters "Name=tag:Name,Values=*$aws_initials*" "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].[InstanceId]" --output text)"
+  aws-generic-list ${1:=$region} ${2:=$aws_filter_initials} ${3:=$aws_query_id}
 }
-
+aws-list-ids-by-owner()
+{
+  aws-generic-list ${1:=$region} ${2:=$aws_filter_owner} ${3:=$aws_query_id}
+}
+aws-list-names-by-initials()
+{
+  aws-generic-list ${1:=$region} ${2:=$aws_filter_initials} ${3:=$aws_query_name}
+}
+aws-list-names-by-owner()
+{
+  aws-generic-list ${1:=$region} ${2:=$aws_filter_owner} ${3:=$aws_query_name}
+}
 
 aws-list-all()
 {
@@ -68,7 +88,7 @@ aws-list-all()
   for regions in us-west-1 us-west-2 us-east-1 us-east-2
   do
        echo $regions
-       echo -e "$(aws ec2 describe-instances --region $regions --filters "Name=tag:Owner,Values=$aws_name" "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].[PublicIpAddress, PrivateIpAddress, Tags[?Key=='Name'].Value|[0], InstanceId]" --output table)" & echo -e "$(aws ec2 describe-instances --region $regions --filters  "Name=instance-state-name,Values=running" "Name=tag:Name,Values=*$aws_initials*"  --query "Reservations[*].Instances[*].[PublicIpAddress, PrivateIpAddress, Tags[?Key=='Name'].Value|[0], InstanceId]" --output table)"
+       echo -e "$(aws ec2 describe-instances --region $regions --filters "$aws_filter_owner" "$aws_filter_instances" --query "$aws_query" --output table)" & echo -e "$(aws ec2 describe-instances --region $regions --filters  "$aws_filter_instances" "$aws_filter_initials"  --query "$aws_query" --output table)"
   done
 }
 aws-list-everyone()
@@ -79,7 +99,7 @@ aws-list-everyone()
   for us_region in us-west-1 us-west-2 us-east-1 us-east-2
   do
        echo $us_region
-       echo -e "$(aws ec2 describe-instances --region $us_region --filters "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].[PublicIpAddress, PrivateIpAddress, Tags[?Key=='Name'].Value|[0], InstanceId]" --output table)"
+       echo -e "$(aws ec2 describe-instances --region $us_region --filters "$aws_filter_instances" --query "$aws_query" --output table)"
   done
 }
 
@@ -89,13 +109,33 @@ aws-create()
   echo "creating in region: " ${2:=$region}
   if [ ${2:=$region} = 'us-west-1' ]
   then
-    aws ec2 --region us-west-1 run-instances --image-id ${aws_uswest1[1]} --count 1 --instance-type $aws_instance_type --key-name $aws_ssh_key --security-group-ids ${aws_uswest1[2]} --subnet-id ${aws_uswest1[3]} --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$1},{Key=Owner,Value=$aws_name},{Key=DoNotDelete,Value=True}]" > /dev/null
+    aws ec2 --region us-west-1 run-instances --image-id ${aws_us_west_1[1]} --count 1 --instance-type $aws_instance_type --key-name $aws_ssh_key --security-group-ids ${aws_us_west_1[2]} --subnet-id ${aws_us_west_1[3]} --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$1},{Key=Owner,Value=$aws_name},{Key=DoNotDelete,Value=True}]" > /dev/null
     echo "waiting for instance to appear in backend . . ."
     sleep 5
     aws-list $region
   elif [ ${2:=$region} = 'us-east-2' ]
   then
-    aws ec2 --region us-east-2 run-instances --image-id ${aws_useast2[1]} --count 1 --instance-type $aws_instance_type --key-name $aws_ssh_key --security-group-ids ${aws_useast2[2]} --subnet-id ${aws_useast2[3]} --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$1},{Key=Owner,Value=$aws_name},{Key=DoNotDelete,Value=True}]" > /dev/null
+    aws ec2 --region us-east-2 run-instances --image-id ${aws_us_east_2[1]} --count 1 --instance-type $aws_instance_type --key-name $aws_ssh_key --security-group-ids ${aws_us_east_2[2]} --subnet-id ${aws_us_east_2[3]} --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$1},{Key=Owner,Value=$aws_name},{Key=DoNotDelete,Value=True}]" > /dev/null
+    echo "waiting for instance to appear in backend . . ."
+    sleep 5
+    aws-list
+  else
+    echo "no default values for" $2 "please add a new region to this function"
+  fi
+}
+
+aws-create-ubuntu()
+{
+  echo "creating in region: " ${2:=$region}
+  if [ ${2:=$region} = 'us-west-1' ]
+  then
+    aws ec2 --region us-west-1 run-instances --image-id ${aws_us_west_1_ubuntu[1]} --count 1 --instance-type $aws_instance_type --key-name $aws_ssh_key --security-group-ids ${aws_us_west_1_ubuntu[2]} --subnet-id ${aws_us_west_1_ubuntu[3]} --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$1},{Key=Owner,Value=$aws_name},{Key=DoNotDelete,Value=True}]" > /dev/null
+    echo "waiting for instance to appear in backend . . ."
+    sleep 5
+    aws-list $region
+  elif [ ${2:=$region} = 'us-east-2' ]
+  then
+    aws ec2 --region us-east-2 run-instances --image-id ${aws_us_east_2_ubuntu[1]} --count 1 --instance-type $aws_instance_type --key-name $aws_ssh_key --security-group-ids ${aws_us_east_2_ubuntu[2]} --subnet-id ${aws_us_east_2_ubuntu[3]} --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$1},{Key=Owner,Value=$aws_name},{Key=DoNotDelete,Value=True}]" > /dev/null
     echo "waiting for instance to appear in backend . . ."
     sleep 5
     aws-list
@@ -116,22 +156,22 @@ aws-delete()
 aws-remove-all()
 {
   echo "about to remove all instances listed below"
-  export aws_ids=$(aws-list-ids-owner ${1:=$region})
+  export aws_ids=$(aws-list-ids-by-owner ${1:=$region})
   echo $aws_ids
   if [[ $aws_ids ]]
   then
     sleep 2
-    aws ec2 terminate-instances --region ${1:=$region} --instance-ids $(aws-list-ids-owner ${1:=$region}) > /dev/null
+    aws ec2 terminate-instances --region ${1:=$region} --instance-ids $(aws-list-ids-by-owner ${1:=$region}) > /dev/null
   else
     echo "no instances to remove"
   fi
   echo "also removing the following unowned instances"
-  export aws_ids=$(aws-list-ids-name ${1:=$region})
+  export aws_ids=$(aws-list-names-by-initials ${1:=$region})
   echo $aws_ids
   if [[ $aws_ids ]]
   then
     sleep 2
-    aws ec2 terminate-instances --region ${1:=$region} --instance-ids $(aws-list-ids-name ${1:=$region}) > /dev/null
+    aws ec2 terminate-instances --region ${1:=$region} --instance-ids $(aws-list-ids-by-initials ${1:=$region}) > /dev/null
   else
     echo "no more instances to remove"
   fi
@@ -156,10 +196,10 @@ aws-create-nlb()
   echo "creating in region: " ${2:=$region}
   if [ ${2:=$region} = 'us-west-1' ]
   then
-    aws elbv2 create-load-balancer --region us-west-1 --name $1 --type network --subnets ${aws_uswest1[3]} > dev/null
+    aws elbv2 create-load-balancer --region us-west-1 --name $1 --type network --subnets ${aws_us_west_1[3]} > dev/null
   elif [ ${2:=$region} = 'us-east-2' ]
   then
-    aws elbv2 create-load-balancer --region us-east-2 --name $1 --type network --subnets ${aws_useast2[3]} > dev/null
+    aws elbv2 create-load-balancer --region us-east-2 --name $1 --type network --subnets ${aws_us_east_2[3]} > dev/null
   else
     echo "no default values for" $2 "please add a new region to this function"
   fi
