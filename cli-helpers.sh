@@ -232,8 +232,9 @@ cleanup-all-providers()
     aws-remove-all $regions
     aws-remove-all-nlb $regions
   done
-  echo "done with AWS, starting on Digital Ocean \n"
-  drop-remove-all
+  ### No longer have access to DO on QA team
+  # echo "done with AWS, starting on Digital Ocean \n"
+  # drop-remove-all
   echo "done with Digital Ocean, starting on Linode \n"
   linode-remove-all
 }
