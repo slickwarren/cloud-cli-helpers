@@ -36,7 +36,7 @@ linode-remove-all()
   linode-list > ~/.linodelist
   while read line
   do
-    export id=$(echo "$line"  | cut -c9-16)
+    export id=$(echo "$line"  | cut -c3-10)
 
     if [[ $id =~ ^[0-9] ]] echo "$id" && linode-cli linodes delete $id
   done < "${1:-.linodelist}"
@@ -118,7 +118,7 @@ aws-create()
     aws ec2 --region us-east-2 run-instances --image-id ${aws_us_east_2[1]} --count 1 --instance-type $aws_instance_type --key-name $aws_ssh_key --security-group-ids ${aws_us_east_2[2]} --subnet-id ${aws_us_east_2[3]} --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$1},{Key=Owner,Value=$aws_name},{Key=DoNotDelete,Value=True}]" > /dev/null
     echo "waiting for instance to appear in backend . . ."
     sleep 5
-    aws-list
+    aws-list us-east-2
   else
     echo "no default values for" $2 "please add a new region to this function"
   fi
