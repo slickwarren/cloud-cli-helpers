@@ -52,6 +52,7 @@ export aws_query_id="Reservations[*].Instances[*].InstanceId"
 export aws_query_name="Reservations[*].Instances[*].Tags[?Key=='Name'].Value|[0]"
 
 export aws_filter_owner="Name=tag:Owner,Values=$aws_name"
+export aws_filter_cicd="Name=tag:CICD,Values=$aws_initials*"
 export aws_filter_initials="Name=tag:Name,Values=*$aws_initials*"
 export aws_filter_instances="Name=instance-state-name,Values=running"
 
@@ -72,6 +73,10 @@ aws-list-ids-by-owner()
 {
   aws-generic-list ${1:=$region} ${2:=$aws_filter_owner} ${3:=$aws_query_id}
 }
+aws-list-ids-by-cicd()
+{
+  aws-generic-list ${1:=$region} ${2:=$aws_filter_cicd} ${3:=$aws_query_id}
+}
 aws-list-names-by-initials()
 {
   aws-generic-list ${1:=$region} ${2:=$aws_filter_initials} ${3:=$aws_query_name}
@@ -88,7 +93,7 @@ aws-list-all()
   for regions in us-west-1 us-west-2 us-east-1 us-east-2
   do
        echo $regions
-       echo -e "$(aws ec2 describe-instances --region $regions --filters "$aws_filter_owner" "$aws_filter_instances" --query "$aws_query" --output table)" & echo -e "$(aws ec2 describe-instances --region $regions --filters  "$aws_filter_instances" "$aws_filter_initials"  --query "$aws_query" --output table)"
+       echo -e "$(aws ec2 describe-instances --region $regions --filters "$aws_filter_owner" "$aws_filter_cicd" "$aws_filter_instances" --query "$aws_query" --output table)" & echo -e "$(aws ec2 describe-instances --region $regions --filters  "$aws_filter_instances" "$aws_filter_initials"  --query "$aws_query" --output table)"
   done
 }
 aws-list-everyone()
@@ -175,7 +180,18 @@ aws-remove-all()
   else
     echo "no more instances to remove"
   fi
+  echo "about to remove all CICD instances listed below"
+  export aws_ids=$(aws-list-ids-by-cicd ${1:=$region})
+  echo $aws_ids
+  if [[ $aws_ids ]]
+  then
+    sleep 2
+    aws ec2 terminate-instances --region ${1:=$region} --instance-ids $(aws-list-ids-by-cicd ${1:=$region}) > /dev/null
+  else
+    echo "no instances to remove"
+  fi
   echo "all instances in ${1:=$region} region are removed"
+
 }
 
 ### AWS nlb
